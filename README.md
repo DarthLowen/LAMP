@@ -9,6 +9,7 @@ A Windows system-tray application that controls the Adafruit Trinkey Neo RGB LED
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - Windows 10 / 11
 - Adafruit Trinkey Neo (VID `239A` / PID `80EF`) loaded with the [CURRENT.UF2 firmware](https://github.com/wolllis/busylight/blob/main/03_Precompiled_Firmware/CURRENT.UF2) from the source project – drag the `.UF2` file onto the Trinkey's USB drive to flash it
+- Optional 3D-printed cover: STL files for the device housing are available on [Thingiverse – thing:5518069](https://www.thingiverse.com/thing:5518069)
 
 ## Build & Run
 
