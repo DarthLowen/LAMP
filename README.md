@@ -1,4 +1,6 @@
-# BusylightTray
+# L.A.M.P.
+### _Local Activity & Mood Peripheral_
+> Because your colleagues somehow still can't tell when you don't want to be disturbed.
 
 A Windows system-tray application that controls the Adafruit Trinkey Neo RGB LED from a context menu, with optional automatic MS Teams presence integration.
 
@@ -14,7 +16,7 @@ A Windows system-tray application that controls the Adafruit Trinkey Neo RGB LED
 ## Build & Run
 
 ```powershell
-cd BusyLight\BusylightTray
+cd LAMP
 dotnet run          # run directly from source
 dotnet publish -c Release -r win-x64 --self-contained   # produce a single .exe
 ```
@@ -24,7 +26,7 @@ The published executable ends up in `bin\Release\net8.0-windows\win-x64\publish\
 ## Usage
 
 1. Plug in the Trinkey.
-2. Launch `BusylightTray.exe`. A grey dot appears in the system tray.
+2. Launch `LAMP.exe`. A grey dot appears in the system tray.
 3. **Left-click or right-click** the tray icon to open the context menu.
 4. Select a status – the LED changes immediately.
 
