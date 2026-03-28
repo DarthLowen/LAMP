@@ -2,11 +2,13 @@
 
 A Windows system-tray application that controls the Adafruit Trinkey Neo RGB LED from a context menu, with optional automatic MS Teams presence integration.
 
+> **Based on** [wolllis/busylight](https://github.com/wolllis/busylight) — the original Python-based busylight project that this C# app was derived from.
+
 ## Requirements
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - Windows 10 / 11
-- Adafruit Trinkey Neo (VID `239A` / PID `80EF`) loaded with firmware that accepts `R,G,B\r` over its virtual COM port
+- Adafruit Trinkey Neo (VID `239A` / PID `80EF`) loaded with the [CURRENT.UF2 firmware](https://github.com/wolllis/busylight/blob/main/03_Precompiled_Firmware/CURRENT.UF2) from the source project – drag the `.UF2` file onto the Trinkey's USB drive to flash it
 
 ## Build & Run
 
