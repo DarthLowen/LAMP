@@ -78,6 +78,12 @@ public class TrayApplication : ApplicationContext
 
         menu.Items.Add(new ToolStripSeparator());
 
+        var rainbowItem = new ToolStripMenuItem("Rainbow Sequence");
+        rainbowItem.Click += OnRainbowClicked;
+        menu.Items.Add(rainbowItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
         _teamsToggleItem = new ToolStripMenuItem("MS Teams Integration: OFF");
         _teamsToggleItem.Click += OnTeamsToggleClicked;
         menu.Items.Add(_teamsToggleItem);
@@ -97,6 +103,52 @@ public class TrayApplication : ApplicationContext
     {
         if (sender is ToolStripMenuItem { Tag: LightColor state })
             ApplyState(state);
+    }
+
+    private void OnRainbowClicked(object? sender, EventArgs e)
+    {
+        TrinketController.SendSequence(RainbowSequence);
+
+        var oldIcon = _trayIcon.Icon;
+        _trayIcon.Icon = CreateDotIcon(Color.FromArgb(148, 0, 211)); // violet dot
+        _trayIcon.Text = "BusyLight – Rainbow";
+        oldIcon?.Dispose();
+    }
+
+    // Each step lights one LED with a rainbow colour while the others are off,
+    // cycling LED0→LED1→LED2→LED3 through red→orange→yellow→green→cyan→blue→violet.
+    private static IEnumerable<Sequence> RainbowSequence
+    {
+        get
+        {
+            // Rainbow hues evenly spread across 28 steps (7 colours × 4 LEDs).
+            // The active LED follows the step index (step % 4 = active LED).
+            (byte R, byte G, byte B)[] hues =
+            [
+                (255,   0,   0), // red
+                (255, 127,   0), // orange
+                (255, 255,   0), // yellow
+                (  0, 255,   0), // green
+                (  0, 255, 255), // cyan
+                (  0,   0, 255), // blue
+                (148,   0, 211), // violet
+            ];
+
+            var off = new RgbColor(0, 0, 0);
+
+            for (int hueIdx = 0; hueIdx < hues.Length; hueIdx++)
+            {
+                var (r, g, b) = hues[hueIdx];
+                var on = new RgbColor(r, g, b);
+
+                for (int led = 0; led < 4; led++)
+                {
+                    var leds = new RgbColor[] { off, off, off, off };
+                    leds[led] = on;
+                    yield return new Sequence(leds[0], leds[1], leds[2], leds[3], waitMs: 100);
+                }
+            }
+        }
     }
 
     private void OnTeamsToggleClicked(object? sender, EventArgs e)

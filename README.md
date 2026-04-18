@@ -30,17 +30,6 @@ The published executable ends up in `bin\Release\net8.0-windows\win-x64\publish\
 3. **Left-click or right-click** the tray icon to open the context menu.
 4. Select a status – the LED changes immediately.
 
-| Status         | LED colour |
-|----------------|------------|
-| Available      | 🟢 Green `(0, 150, 0)` |
-| Busy           | 🔴 Red `(150, 0, 0)` |
-| Do Not Disturb | 🔴 Red `(150, 0, 0)` |
-| Away           | ⚫ Off |
-| Be Right Back  | 🔵 Blue `(0, 0, 255)` |
-| On The Phone   | 🔵 Blue `(0, 0, 255)` |
-| Presenting     | 🔵 Blue `(0, 0, 255)` |
-| In A Meeting   | 🔵 Blue `(0, 0, 255)` |
-| Offline        | ⚫ Off |
 
 ## MS Teams Integration
 
