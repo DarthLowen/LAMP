@@ -12,6 +12,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="sequences\rgb.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="sequences\rgb.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Virtual COM port communication -->
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
     <!-- WMI queries to find device by hardware ID -->

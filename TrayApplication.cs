@@ -30,7 +30,8 @@ public class TrayApplication : ApplicationContext
     // Background thread enqueues Teams states; UI thread dequeues via _pollTimer.
     private readonly ConcurrentQueue<string> _teamsQueue = new();
 
-    private ToolStripMenuItem _teamsToggleItem = null!;
+    private ToolStripMenuItem _teamsToggleItem   = null!;
+    private ToolStripMenuItem _sequencesMenuItem = null!;
     private bool _teamsEnabled;
 
     // ── Constructor ──────────────────────────────────────────────────────────
@@ -81,6 +82,16 @@ public class TrayApplication : ApplicationContext
         var rainbowItem = new ToolStripMenuItem("Rainbow Sequence");
         rainbowItem.Click += OnRainbowClicked;
         menu.Items.Add(rainbowItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        var seqEditorItem = new ToolStripMenuItem("Sequence Editor…");
+        seqEditorItem.Click += (_, _) => new SequenceEditorForm().Show();
+        menu.Items.Add(seqEditorItem);
+
+        _sequencesMenuItem = new ToolStripMenuItem("Sequences");
+        _sequencesMenuItem.DropDownOpening += (_, _) => RefreshSequencesMenu();
+        menu.Items.Add(_sequencesMenuItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
@@ -145,7 +156,8 @@ public class TrayApplication : ApplicationContext
                 {
                     var leds = new RgbColor[] { off, off, off, off };
                     leds[led] = on;
-                    yield return new Sequence(leds[0], leds[1], leds[2], leds[3], waitMs: 100);
+                    //yield return new Sequence(leds[0], leds[1], leds[2], leds[3], waitMs: 100);
+                    yield return new Sequence(leds[0], leds[1], leds[2], off, waitMs: 100);
                 }
             }
         }
@@ -162,6 +174,41 @@ public class TrayApplication : ApplicationContext
             _teamsMonitor.Start();
         else
             _teamsMonitor.Stop();
+    }
+
+    // ── Sequences submenu ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Rebuilds the Sequences drop-down every time the user opens it so newly
+    /// saved files appear without restarting the application.
+    /// </summary>
+    private void RefreshSequencesMenu()
+    {
+        _sequencesMenuItem.DropDownItems.Clear();
+
+        var files = SequenceFiles.ListFiles();
+        if (files.Length == 0)
+        {
+            _sequencesMenuItem.DropDownItems.Add(
+                new ToolStripMenuItem("(no sequences saved)") { Enabled = false });
+            return;
+        }
+
+        foreach (var path in files)
+        {
+            var label    = Path.GetFileNameWithoutExtension(path);
+            var item     = new ToolStripMenuItem(label);
+            var captured = path;
+            item.Click  += (_, _) => SendSequenceFile(captured);
+            _sequencesMenuItem.DropDownItems.Add(item);
+        }
+    }
+
+    private static void SendSequenceFile(string path)
+    {
+        var steps = SequenceFiles.LoadAsSequences(path);
+        if (steps is not null)
+            TrinketController.SendSequence(steps);
     }
 
     // ── Teams queue drain (runs on UI thread via WinForms Timer) ─────────────
