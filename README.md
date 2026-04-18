@@ -67,8 +67,6 @@ Filename matching is case-insensitive. When Teams triggers a state change, the a
 
 Open the editor via **Sequence Editor…** in the tray context menu.
 
-![Sequence Editor layout](docs/sequence-editor.png)
-
 ### Layout
 
 | Area | Description |
