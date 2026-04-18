@@ -229,14 +229,39 @@ public class TrayApplication : ApplicationContext
 
     private void ApplyState(LightColor state)
     {
-        // Send colour to the Trinkey (fire-and-forget; failure is silently ignored).
-        TrinketController.SendColor(state.R, state.G, state.B);
+        // Prefer a saved sequence file named after the Teams state key (e.g. "available.json").
+        // Fall back to the fixed solid colour when no matching file exists.
+        if (!TrySendStateSequence(state.TeamsState))
+            TrinketController.SendColor(state.R, state.G, state.B);
 
         // Update the tray icon and tooltip.
         var oldIcon = _trayIcon.Icon;
         _trayIcon.Icon = CreateDotIcon(state.DisplayColor);
         _trayIcon.Text = $"BusyLight – {state.DisplayName}";
         oldIcon?.Dispose();
+    }
+
+    /// <summary>
+    /// Looks for a file whose stem matches <paramref name="teamsState"/> (case-insensitive)
+    /// in <see cref="SequenceFiles.Folder"/> and sends it to the Trinkey.
+    /// Returns <see langword="true"/> on success, <see langword="false"/> when no
+    /// matching file is found or the file cannot be loaded.
+    /// </summary>
+    private static bool TrySendStateSequence(string teamsState)
+    {
+        var path = SequenceFiles.ListFiles()
+            .FirstOrDefault(f => string.Equals(
+                Path.GetFileNameWithoutExtension(f),
+                teamsState,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (path is null) return false;
+
+        var steps = SequenceFiles.LoadAsSequences(path);
+        if (steps is null) return false;
+
+        TrinketController.SendSequence(steps);
+        return true;
     }
 
     // ── Icon / bitmap helpers ─────────────────────────────────────────────────
