@@ -119,13 +119,24 @@ public class TeamsMonitor : IDisposable
     /// </summary>
     private static string? ParseGlyphBadge(string line)
     {
-        if (!line.Contains("GlyphBadge", StringComparison.Ordinal)) return null;
+        if (line.Contains("GlyphBadge", StringComparison.Ordinal))
+        {
+            int start = line.IndexOf("{\"", StringComparison.Ordinal);
+            int end = line.IndexOf("\"}", StringComparison.Ordinal);
 
-        int start = line.IndexOf("{\"", StringComparison.Ordinal);
-        int end   = line.IndexOf("\"}", StringComparison.Ordinal);
+            if (start >= 0 && end > start + 2)
+                return line[(start + 2)..end];
+        }
+        else if (line.Contains("native_modules::TaskbarModule: ShowBadge New Badge",
+                                  StringComparison.Ordinal))
+        {
+            string matchWord = ", status ";
+            int start = line.LastIndexOf(matchWord, StringComparison.Ordinal);
+            int end = line.Length;
 
-        if (start >= 0 && end > start + 2)
-            return line[(start + 2)..end];
+            if (start >= 0 && end > start + 2)
+                return line[(start + matchWord.Length)..end];
+        }
 
         return null;
     }
