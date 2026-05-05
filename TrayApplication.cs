@@ -27,6 +27,9 @@ public class TrayApplication : ApplicationContext
     // WinForms Timer fires on the UI thread – safe to update UI from its Tick.
     private readonly System.Windows.Forms.Timer _pollTimer;
 
+    // Sends a heartbeat to the device every 30 s to prevent the watchdog from blanking the LEDs.
+    private readonly System.Windows.Forms.Timer _heartbeatTimer;
+
     // Background thread enqueues Teams states; UI thread dequeues via _pollTimer.
     private readonly ConcurrentQueue<string> _teamsQueue = new();
 
@@ -44,6 +47,10 @@ public class TrayApplication : ApplicationContext
         _pollTimer = new System.Windows.Forms.Timer { Interval = 500 };
         _pollTimer.Tick += (_, _) => DrainTeamsQueue();
         _pollTimer.Start();
+
+        _heartbeatTimer = new System.Windows.Forms.Timer { Interval = 30_000 };
+        _heartbeatTimer.Tick += (_, _) => TrinketController.SendHeartbeat();
+        _heartbeatTimer.Start();
 
         _trayIcon = new NotifyIcon
         {

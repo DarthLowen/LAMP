@@ -146,4 +146,26 @@ public static class TrinketController
             return false;
         }
     }
+
+    /// <summary>
+    /// Sends a heartbeat command to the Trinkey to reset its 60-second watchdog timer.
+    /// Returns true on success, false if the device was not found or the write failed.
+    /// </summary>
+    public static bool SendHeartbeat()
+    {
+        string? port = FindComPort();
+        if (port is null) return false;
+
+        try
+        {
+            using var serial = new SerialPort(port);
+            serial.Open();
+            serial.Write("heartbeat\r");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

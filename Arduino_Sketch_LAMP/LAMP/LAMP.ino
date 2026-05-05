@@ -49,7 +49,12 @@ Adafruit_FreeTouch qt_2 = Adafruit_FreeTouch(2, OVERSAMPLE_4, RESISTOR_50K, FREQ
 //   Static color : "R,G,B\r"        – sets all 4 LEDs to rgb(R,G,B)
 //   Sequence     : "s;r1,g1,b1,r2,g2,b2,r3,g3,b3,r4,g4,b4;wait_ms;...\r"
 //                  Repeats indefinitely until the next message arrives.
+//   Heartbeat    : "heartbeat\r"    – resets the 60-second watchdog timer.
+//                  If no heartbeat is received within 60 s, all LEDs are
+//                  turned off until the next color/sequence command arrives.
 // ---------------------------------------------------------------------------
+
+#define HEARTBEAT_TIMEOUT_MS 60000UL
 
 #define SERIAL_BUFFER_SIZE 1024
 #define MAX_STEPS          32
@@ -72,10 +77,14 @@ static bool         inSequenceMode = false;
 static int          currentStep    = 0;
 static unsigned long stepStartTime = 0;
 
+static unsigned long lastHeartbeatTime = 0;
+static bool          ledsOff           = false;
+
 // Forward declarations
 void processCommand(char* buf);
 void parseSequence(char* buf);
 void applyStep(int step);
+void turnOffLeds();
 
 // the setup function runs once when you press reset or power the board
 void setup()
@@ -103,6 +112,7 @@ void setup()
 
   Serial.begin(9600);
 
+  lastHeartbeatTime = millis();
   fs_changed = true; // to print contents initially
   
   strip.begin();
@@ -160,8 +170,17 @@ void loop()
     }
   }
 
+  // ---- Heartbeat watchdog ----
+  {
+    unsigned long now = millis();
+    if (!ledsOff && (now - lastHeartbeatTime >= HEARTBEAT_TIMEOUT_MS))
+    {
+      turnOffLeds();
+    }
+  }
+
   // ---- Sequence playback ----
-  if (inSequenceMode && sequenceLength > 0)
+  if (!ledsOff && inSequenceMode && sequenceLength > 0)
   {
     unsigned long now = millis();
     if (now - stepStartTime >= sequence[currentStep].wait_ms)
@@ -178,13 +197,23 @@ void loop()
 // ---------------------------------------------------------------------------
 void processCommand(char* buf)
 {
+  if (strcmp(buf, "heartbeat") == 0)
+  {
+    lastHeartbeatTime = millis();
+    return;
+  }
+
   if (buf[0] == 's')
   {
+    lastHeartbeatTime = millis();
+    ledsOff = false;
     parseSequence(buf);
   }
   else
   {
     // Static color: "R,G,B"
+    lastHeartbeatTime = millis();
+    ledsOff = false;
     inSequenceMode = false;
     char* save;
     char* token = strtok_r(buf, ",", &save);
@@ -265,6 +294,18 @@ void applyStep(int step)
       sequence[step].leds[i].b
     ));
   }
+  strip.show();
+}
+
+// ---------------------------------------------------------------------------
+// turnOffLeds – blanks all LEDs and stops sequence playback
+// ---------------------------------------------------------------------------
+void turnOffLeds()
+{
+  inSequenceMode = false;
+  ledsOff        = true;
+  for (int i = 0; i < 4; i++)
+    strip.setPixelColor(i, 0);
   strip.show();
 }
 
