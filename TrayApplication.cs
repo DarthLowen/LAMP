@@ -37,10 +37,14 @@ public class TrayApplication : ApplicationContext
     private ToolStripMenuItem _sequencesMenuItem = null!;
     private bool _teamsEnabled;
 
+    private readonly AppSettings _settings;
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public TrayApplication()
     {
+        _settings = AppSettings.Load();
+
         _teamsMonitor = new TeamsMonitor();
         _teamsMonitor.StateChanged += s => _teamsQueue.Enqueue(s);
 
@@ -66,6 +70,12 @@ public class TrayApplication : ApplicationContext
             if (e.Button == MouseButtons.Left)
                 _trayIcon.ContextMenuStrip!.Show(Cursor.Position);
         };
+
+        // Restore persisted state.
+        if (_settings.TeamsEnabled)
+            SetTeamsEnabled(true);
+
+        RestoreLastMode();
     }
 
     // ── Context menu ─────────────────────────────────────────────────────────
@@ -120,7 +130,11 @@ public class TrayApplication : ApplicationContext
     private void OnStateClicked(object? sender, EventArgs e)
     {
         if (sender is ToolStripMenuItem { Tag: LightColor state })
+        {
             ApplyState(state);
+            _settings.LastMode = $"color:{state.TeamsState}";
+            _settings.Save();
+        }
     }
 
     private void OnRainbowClicked(object? sender, EventArgs e)
@@ -131,6 +145,9 @@ public class TrayApplication : ApplicationContext
         _trayIcon.Icon = CreateDotIcon(Color.FromArgb(148, 0, 211)); // violet dot
         _trayIcon.Text = "BusyLight – Rainbow";
         oldIcon?.Dispose();
+
+        _settings.LastMode = "rainbow";
+        _settings.Save();
     }
 
     // Each step lights one LED with a rainbow colour while the others are off,
@@ -172,7 +189,12 @@ public class TrayApplication : ApplicationContext
 
     private void OnTeamsToggleClicked(object? sender, EventArgs e)
     {
-        _teamsEnabled = !_teamsEnabled;
+        SetTeamsEnabled(!_teamsEnabled);
+    }
+
+    private void SetTeamsEnabled(bool enabled)
+    {
+        _teamsEnabled = enabled;
         _teamsToggleItem.Text = _teamsEnabled
             ? "MS Teams Integration: ON  ✓"
             : "MS Teams Integration: OFF";
@@ -181,6 +203,9 @@ public class TrayApplication : ApplicationContext
             _teamsMonitor.Start();
         else
             _teamsMonitor.Stop();
+
+        _settings.TeamsEnabled = _teamsEnabled;
+        _settings.Save();
     }
 
     // ── Sequences submenu ──────────────────────────────────────────────────
@@ -211,11 +236,52 @@ public class TrayApplication : ApplicationContext
         }
     }
 
-    private static void SendSequenceFile(string path)
+    private void SendSequenceFile(string path)
     {
         var steps = SequenceFiles.LoadAsSequences(path);
         if (steps is not null)
+        {
             TrinketController.SendSequence(steps);
+            _settings.LastMode = $"sequence:{Path.GetFileNameWithoutExtension(path)}";
+            _settings.Save();
+        }
+    }
+
+    // ── Startup restore ───────────────────────────────────────────────────────
+
+    private void RestoreLastMode()
+    {
+        if (_settings.LastMode is not { } mode) return;
+
+        if (mode == "rainbow")
+        {
+            TrinketController.SendSequence(RainbowSequence);
+            var oldIcon = _trayIcon.Icon;
+            _trayIcon.Icon = CreateDotIcon(Color.FromArgb(148, 0, 211));
+            _trayIcon.Text = "BusyLight – Rainbow";
+            oldIcon?.Dispose();
+        }
+        else if (mode.StartsWith("sequence:", StringComparison.Ordinal))
+        {
+            string name = mode["sequence:".Length..];
+            string? path = SequenceFiles.ListFiles()
+                .FirstOrDefault(f => string.Equals(
+                    Path.GetFileNameWithoutExtension(f), name,
+                    StringComparison.OrdinalIgnoreCase));
+            if (path is not null)
+            {
+                var steps = SequenceFiles.LoadAsSequences(path);
+                if (steps is not null)
+                    TrinketController.SendSequence(steps);
+            }
+        }
+        else if (mode.StartsWith("color:", StringComparison.Ordinal))
+        {
+            string key = mode["color:".Length..];
+            LightColor? state = LightStates.FromTeamsState(key);
+            if (state is not null)
+                ApplyState(state);
+        }
     }
 
     // ── Teams queue drain (runs on UI thread via WinForms Timer) ─────────────
